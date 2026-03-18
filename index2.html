@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Tracker ✨</title>
+    <style>
+        :root {
+            --primary: #ff8fab;
+            --secondary: #ffe5ec;
+            --bg: #fff0f3;
+            --text: #5c2d3a;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(255, 143, 171, 0.2);
+            text-align: center;
+            width: 320px;
+        }
+
+        .token-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin: 1.5rem 0;
+        }
+
+        .token {
+            width: 45px;
+            height: 45px;
+            background-color: var(--secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .token.active {
+            background-color: var(--primary);
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 4px 10px rgba(255, 143, 171, 0.4);
+        }
+
+        .reset-btn {
+            background: none;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Celebration Screen */
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            text-align: center;
+        }
+
+        .big-star { font-size: 5rem; animation: bounce 1s infinite; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>My Goal ✨</h1>
+    <p>Tap a flower for every win!</p>
+    <div class="token-grid" id="grid"></div>
+    <button class="reset-btn" onclick="reset()">Start Over</button>
+</div>
+
+<div id="overlay">
+    <div class="big-star">⭐</div>
+    <h2 style="color: var(--primary); font-size: 2rem;">YOU DID IT!</h2>
+    <p>So proud of your hard work! 🎉</p>
+    <button class="reset-btn" onclick="reset()">Yay! Reset</button>
+</div>
+
+<script>
+    const total = 10;
+    const grid = document.getElementById('grid');
+    const overlay = document.getElementById('overlay');
+    let activeCount = 0;
+
+    // Create an Audio Context
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // 🎵 Function to play a cute "Plink" sound
+    function playPlink(frequency) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = 'sine'; // Soft, cute sound
+        osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+        
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    // 🎉 Function to play a "Victory Fanfare"
+    function playVictory() {
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, i) => {
+            setTimeout(() => playPlink(freq * 1.2), i * 150);
+        });
+    }
+
+    function init() {
+        grid.innerHTML = '';
+        activeCount = 0;
+        for (let i = 0; i < total; i++) {
+            const t = document.createElement('div');
+            t.className = 'token';
+            t.innerHTML = '🌸';
+            t.onclick = () => {
+                // Resume audio context (browsers require a click to start audio)
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                if (!t.classList.contains('active')) {
+                    t.classList.add('active');
+                    t.innerHTML = '💖';
+                    activeCount++;
+                    
+                    // Play a higher pitch for each token added!
+                    playPlink(400 + (activeCount * 60));
+
+                    if (activeCount === total) {
+                        setTimeout(() => {
+                            overlay.style.display = 'flex';
+                            playVictory();
+                        }, 400);
+                    }
+                }
+            };
+            grid.appendChild(t);
+        }
+    }
+
+    function reset() {
+        overlay.style.display = 'none';
+        init();
+    }
+
+    init();
+</script>
+</body>
+</html>
